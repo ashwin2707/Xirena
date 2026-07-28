@@ -9,4 +9,5 @@ model User {
   accounts OAuthAccount[]
   refreshTokens RefreshToken[]
   memories Memory[]
+  conversations Conversation[]
 }
