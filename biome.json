@@ -24,7 +24,18 @@
 				"noUnusedVariables": "error"
 			},
 			"style": {
-				"useImportType": "error"
+				"useImportType": {
+					"level": "error",
+					"options": {
+						"style": "separatedType"
+					}
+				},
+				"useExportType": {
+					"level": "error",
+					"options": {
+						"style": "separatedType"
+					}
+				}
 			}
 		}
 	},

@@ -1,0 +1,13 @@
+{
+	"name": "@xirena/ai",
+	"private": true,
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"scripts": {
+		"build": "tsc -b"
+	},
+	"dependencies": {
+		"groq-sdk": "^1.4.0"
+	}
+}

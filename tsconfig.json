@@ -1,4 +1,4 @@
 {
 	"files": [],
-	"references": [{ "path": "libs/db" }]
+	"references": [{ "path": "libs/db" }, { "path": "libs/ai" }]
 }

@@ -217,6 +217,12 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
+  libs/ai:
+    dependencies:
+      groq-sdk:
+        specifier: ^1.4.0
+        version: 1.4.0
+
   libs/db:
     dependencies:
       '@node-rs/argon2':
@@ -921,6 +927,10 @@ packages:
 
   graphmatch@1.1.1:
     resolution: {integrity: sha512-5ykVn/EXM1hF0XCaWh05VbYvEiOL2lY1kBxZtaYsyvjp7cmWOU1XsAdfQBwClraEofXDT197lFbXOEVMHpvQOg==}
+
+  groq-sdk@1.4.0:
+    resolution: {integrity: sha512-4EAmBWlt5SNVyhKWqVPns9marmWYbtYO4kkE0u34NW3+GlVQ5d/JJ0sJRg/rOsqmVispCD3bK/EykH3zC1AeUQ==}
+    hasBin: true
 
   iconv-lite@0.7.3:
     resolution: {integrity: sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ==}
@@ -1794,6 +1804,8 @@ snapshots:
   grammex@3.1.13: {}
 
   graphmatch@1.1.1: {}
+
+  groq-sdk@1.4.0: {}
 
   iconv-lite@0.7.3:
     dependencies:

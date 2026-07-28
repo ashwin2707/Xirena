@@ -30,6 +30,7 @@ export const createDb = (config: DbConfig) => {
 export { EmailTakenError, InvalidCredentialsError, InvalidRefreshTokenError } from './errors.js'
 export type { Conversation, Memory, Message, User } from './generated/prisma/client.js'
 export { AuthService } from './services/auth.service.js'
-export { ConversationService, type ConversationSummary } from './services/conversation.service.js'
+export type { ConversationSummary } from './services/conversation.service.js'
+export { ConversationService } from './services/conversation.service.js'
 export { MemoryService } from './services/memory.service.js'
 export { UserService } from './services/user.service.js'
