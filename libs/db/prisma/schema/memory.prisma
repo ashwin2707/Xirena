@@ -1,0 +1,10 @@
+model Memory {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade) 
+  content String
+  source String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

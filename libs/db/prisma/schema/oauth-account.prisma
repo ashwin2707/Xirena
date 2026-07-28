@@ -1,0 +1,11 @@
+model OAuthAccount {
+  id String @id @default(cuid())
+  provider String
+  providerAccountId String
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
