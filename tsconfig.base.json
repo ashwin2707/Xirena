@@ -1,0 +1,24 @@
+{
+	"compilerOptions": {
+		"target": "ES2025",
+		"lib": ["ES2025"],
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+
+		"strict": true,
+		"declaration": true,
+		"declarationMap": true,
+		"sourceMap": true,
+		"composite": true,
+
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"allowSyntheticDefaultImports": true,
+		"skipLibCheck": true,
+		"noUncheckedIndexedAccess": true,
+		"verbatimModuleSyntax": true,
+
+		"types": ["node"]
+	}
+}
