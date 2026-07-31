@@ -1,0 +1,22 @@
+{
+	"name": "@xirena/api",
+	"private": true,
+	"type": "module",
+	"main": "./dist/index.js",
+	"scripts": {
+		"build": "tsc -b",
+		"dev": "tsc -b --watch & node --env-file=.env --watch dist/index.js",
+		"start": "node --env-file=.env dist/index.js"
+	},
+	"dependencies": {
+		"@fastify/cookie": "^11.1.2",
+		"@fastify/cors": "^11.3.0",
+		"@fastify/jwt": "^10.2.1",
+		"@fastify/oauth2": "^8.2.0",
+		"@xirena/ai": "workspace:*",
+		"@xirena/db": "workspace:*",
+		"fastify": "^5.10.0",
+		"fastify-type-provider-zod": "^7.0.0",
+		"zod": "^4.4.3"
+	}
+}
