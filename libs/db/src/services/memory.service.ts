@@ -13,7 +13,20 @@ export class MemoryService {
 	}
 
 	add(userId: string, content: string, source: MemorySource): Promise<Memory> {
-		return this.prisma.memory.create({ data: { userId, content, source } })
+		return this.prisma.memory.upsert({
+			where: { userId_content: { userId, content } },
+			update: {},
+			create: { userId, content, source },
+		})
+	}
+
+	async addMany(userId: string, contents: string[], source: MemorySource): Promise<number> {
+		if (contents.length === 0) return 0
+		const { count } = await this.prisma.memory.createMany({
+			data: contents.map((content) => ({ userId, content, source })),
+			skipDuplicates: true,
+		})
+		return count
 	}
 
 	async remove(userId: string, id: string): Promise<boolean> {

@@ -8,7 +8,7 @@ export type ConversationSummary = {
 	updatedAt: Date
 }
 
-const DEFAULT_HISTORY_LIMIT = 40
+export const DEFAULT_HISTORY_LIMIT = 40
 
 export class ConversationService {
 	constructor(private readonly prisma: PrismaClient) {}
@@ -29,19 +29,16 @@ export class ConversationService {
 		return this.prisma.conversation.findFirst({ where: { id, userId } })
 	}
 
-	async loadMessages(conversationId: string, limit = DEFAULT_HISTORY_LIMIT): Promise<Message[]> {
+	async loadMessages(conversationId: string, limit = DEFAULT_HISTORY_LIMIT, before?: Date): Promise<Message[]> {
 		const rows = await this.prisma.message.findMany({
-			where: { conversationId },
+			where: { conversationId, ...(before ? { createdAt: { lt: before } } : {}) },
 			orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
 			take: limit,
 		})
 		return rows.reverse()
 	}
 
-	async appendMessages(
-		conversationId: string,
-		messages: { role: MessageRole; content: string }[],
-	): Promise<void> {
+	async appendMessages(conversationId: string, messages: { role: MessageRole; content: string }[]): Promise<void> {
 		/**
 		 * Postgres CURRENT_TIMESTAMP is transaction-start time, so rows written together would
 		 * share an identical createdAt and read back in arbitrary order. Stamp them explicitly.
