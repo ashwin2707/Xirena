@@ -1,0 +1,55 @@
+name: CI
+
+# When to run. `push` covers commits to main; `pull_request` covers everything proposed
+# against it. Both, so a PR is checked and so is whatever actually lands.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# If you push twice in quick succession, cancel the older run instead of paying for both.
+# `group` keys on the branch/PR, so runs on different branches never cancel each other.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, typecheck, build
+    runs-on: ubuntu-latest
+
+    env:
+      # `libs/db/prisma.config.ts` resolves DATABASE_URL when the Prisma CLI loads its config,
+      # so `prisma generate` fails without it — even though generating never touches a database.
+      # This value is never connected to.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Install Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          # Caches the pnpm store between runs, keyed on pnpm-lock.yaml.
+          cache: pnpm
+
+      - name: Install dependencies
+        # --frozen-lockfile fails if pnpm-lock.yaml disagrees with the package.json files,
+        # which is what you want in CI: it proves the lockfile is committed and current.
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint and format check
+        run: pnpm check
+
+      - name: Generate Prisma client and typecheck
+        # `pnpm build` runs `prisma generate` then `tsc -b` across all three packages.
+        # A type error anywhere fails the job.
+        run: pnpm build
