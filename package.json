@@ -9,10 +9,13 @@
 			"onFail": "download"
 		}
 	},
+	"engines": {
+		"node": ">=26"
+	},
 	"scripts": {
 		"check": "biome check .",
 		"check:write": "biome check --write .",
-		"build": "tsc -b"
+		"build": "pnpm --filter @xirena/db run db:generate && tsc -b"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.5",
