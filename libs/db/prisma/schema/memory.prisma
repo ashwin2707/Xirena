@@ -1,10 +1,13 @@
 model Memory {
-  id String @id @default(cuid())
-  userId String
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade) 
-  content String
-  source String
-  createdAt DateTime @default(now())
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  content        String
+  source         String
+  createdAt      DateTime      @default(now())
 
-  @@index([userId])
+  @@unique([userId, content])
+  @@index([userId, createdAt])
 }
