@@ -1,6 +1,6 @@
 export class EmailTakenError extends Error {
-	constructor(email: string) {
-		super(`Email already in use: ${email}`)
+	constructor() {
+		super('Email already in use')
 		this.name = 'EmailTakenError'
 	}
 }

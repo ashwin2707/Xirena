@@ -18,7 +18,9 @@ export class AuthService {
 	) {}
 
 	async register(input: { email: string; password: string; displayName?: string }): Promise<User> {
-		if (await this.users.findByEmail(input.email)) throw new EmailTakenError(input.email)
+		if (await this.users.findByEmail(input.email)) {
+			throw new EmailTakenError()
+		}
 		return this.users.createWithPassword(input)
 	}
 
@@ -38,7 +40,6 @@ export class AuthService {
 		})
 		return { raw, expiresAt }
 	}
-
 	async rotateRefreshToken(raw: string): Promise<{ user: User; refresh: IssuedRefreshToken }> {
 		const record = await this.prisma.refreshToken.findUnique({
 			where: { tokenHash: hashToken(raw) },
@@ -61,6 +62,16 @@ export class AuthService {
 		})
 	}
 
+	async revokeAllForUser(userId: string): Promise<void> {
+		await this.prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } })
+	}
+
+	async pruneExpiredTokens(olderThan = new Date()): Promise<number> {
+		const { count } = await this.prisma.refreshToken.deleteMany({
+			where: { OR: [{ expiresAt: { lt: olderThan } }, { revokedAt: { not: null } }] },
+		})
+		return count
+	}
 	async findOrCreateDiscordUser(input: {
 		providerAccountId: string
 		email?: string | null
@@ -78,9 +89,8 @@ export class AuthService {
 		})
 		if (existing) return existing.user
 
-		const linkable =
-			input.email && input.emailVerified ? await this.users.findByEmail(input.email) : undefined
-		if (linkable) {
+		const linkable = input.email && input.emailVerified ? await this.users.findByEmail(input.email) : undefined
+		if (linkable?.emailVerified) {
 			await this.prisma.oAuthAccount.create({
 				data: {
 					provider: 'discord',
@@ -93,7 +103,7 @@ export class AuthService {
 
 		return this.prisma.user.create({
 			data: {
-				email: input.email || undefined,
+				email: input.email && input.emailVerified ? input.email : undefined,
 				displayName: input.displayName || undefined,
 				accounts: { create: { provider: 'discord', providerAccountId: input.providerAccountId } },
 			},
