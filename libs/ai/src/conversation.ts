@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import type { LLMProvider } from './llm/types.js'
 import type { AbortOptions, Message } from './types.js'
 
@@ -9,6 +10,8 @@ export type TurnContext = {
 type AssistantOptions = {
 	system?: string
 }
+
+const factsSchema = z.array(z.string().trim().min(1).max(200)).catch([])
 
 const MEMORY_EXTRACTION_PROMPT = [
 	'You extract durable, long-term facts about the user from a conversation.',
@@ -39,12 +42,7 @@ export class Assistant {
 	}
 
 	/** Pull durable facts out of a finished turn. The caller decides what to persist. */
-	async extractFacts(
-		userText: string,
-		assistantText: string,
-		known: string[],
-		opts?: AbortOptions,
-	): Promise<string[]> {
+	async extractFacts(userText: string, assistantText: string, known: string[], opts?: AbortOptions): Promise<string[]> {
 		const messages: Message[] = [
 			{ role: 'system', content: MEMORY_EXTRACTION_PROMPT },
 			{
@@ -68,26 +66,23 @@ export class Assistant {
 
 	private buildMessages(userText: string, context: TurnContext): Message[] {
 		const messages: Message[] = []
-		const system = this.systemWithMemories(context.memories)
-		if (system) messages.push({ role: 'system', content: system })
+		if (this.system) messages.push({ role: 'system', content: this.system })
+		if (context.memories.length > 0) {
+			messages.push({
+				role: 'user',
+				content: `<user_facts>\n${context.memories.map((m) => `- ${m.replace(/[\r\n]+/g, ' ')}`).join('\n')}\n</user_facts>`,
+			})
+		}
 		messages.push(...context.history, { role: 'user', content: userText })
 		return messages
-	}
-
-	private systemWithMemories(memories: string[]): string | undefined {
-		if (memories.length === 0) return this.system
-		const block = `What you know about the user:\n${memories.map((item) => `- ${item}`).join('\n')}`
-		return [this.system, block].filter(Boolean).join('\n\n')
 	}
 }
 
 const parseFacts = (raw: string): string[] => {
-	const match = raw.match(/\[[\s\S]*\]/) // grab the first JSON array in the output
+	const match = raw.match(/\[[\s\S]*\]/) /** grab the first JSON array in the output */
 	if (!match) return []
 	try {
-		const parsed: unknown = JSON.parse(match[0])
-		if (!Array.isArray(parsed)) return []
-		return parsed.filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+		return factsSchema.parse(JSON.parse(match[0])).slice(0, 5)
 	} catch {
 		return []
 	}

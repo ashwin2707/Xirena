@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import type { AbortOptions, Audio } from '../types.js'
 import type { TTSProvider } from './types.js'
 
@@ -5,6 +6,12 @@ const DEFAULT_MODEL = 'eleven_flash_v2_5'
 const DEFAULT_VOICE = 'EXAVITQu4vr4xnSDxMaL'
 const DEFAULT_OUTPUT_FORMAT = 'mp3_22050_32'
 const DEFAULT_WS_URL = 'wss://api.elevenlabs.io'
+
+const frameSchema = z.object({
+	audio: z.string().optional(),
+	isFinal: z.boolean().optional(),
+	error: z.string().optional(),
+})
 
 type ElevenLabsConfig = {
 	apiKey: string
@@ -32,10 +39,7 @@ export class ElevenLabsTTS implements TTSProvider {
 		this.encoding = encodingFromFormat(this.outputFormat)
 	}
 
-	synthesizeStreamingInput(
-		textStream: AsyncIterable<string>,
-		opts?: AbortOptions,
-	): AsyncIterable<Audio> {
+	synthesizeStreamingInput(textStream: AsyncIterable<string>, opts?: AbortOptions): AsyncIterable<Audio> {
 		const url = new URL(`${this.wsUrl}/v1/text-to-speech/${this.voice}/stream-input`)
 		url.searchParams.set('model_id', this.model)
 		url.searchParams.set('output_format', this.outputFormat)
@@ -51,6 +55,7 @@ export class ElevenLabsTTS implements TTSProvider {
 		}
 
 		const ws = new WebSocket(url)
+		let finalSeen = false
 
 		ws.addEventListener('open', () => {
 			ws.send(
@@ -77,38 +82,42 @@ export class ElevenLabsTTS implements TTSProvider {
 					if (ws.readyState === WebSocket.OPEN) ws.close()
 					wake()
 				}
-			})()
+			})().catch(() => {
+				/** already recorded in `error` */
+			})
 		})
 
 		ws.addEventListener('message', (event) => {
 			if (typeof event.data !== 'string') return
+			let raw: unknown
 			try {
-				const msg = JSON.parse(event.data) as {
-					audio?: string
-					isFinal?: boolean
-					error?: string
-				}
-				if (msg.error) {
-					error = new Error(`elevenLabs: ${msg.error}`)
-					done = true
-					ws.close()
-					wake()
-					return
-				}
-				if (msg.audio) {
-					queue.push({
-						data: new Uint8Array(Buffer.from(msg.audio, 'base64')),
-						format: { encoding: this.encoding },
-					})
-					wake()
-				}
-				if (msg.isFinal) {
-					done = true
-					ws.close()
-					wake()
-				}
+				raw = JSON.parse(event.data)
 			} catch {
-				// ignore non-JSON
+				return /** non-JSON; ignore */
+			}
+			const parsed = frameSchema.safeParse(raw)
+			if (!parsed.success) return
+			const frame = parsed.data
+
+			if (frame.error) {
+				error = new Error(`elevenLabs: ${frame.error}`)
+				done = true
+				ws.close()
+				wake()
+				return
+			}
+			if (frame.audio) {
+				queue.push({
+					data: new Uint8Array(Buffer.from(frame.audio, 'base64')),
+					format: { encoding: this.encoding },
+				})
+				wake()
+			}
+			if (frame.isFinal) {
+				finalSeen = true
+				done = true
+				ws.close()
+				wake()
 			}
 		})
 
@@ -118,7 +127,10 @@ export class ElevenLabsTTS implements TTSProvider {
 			wake()
 		})
 
-		ws.addEventListener('close', () => {
+		ws.addEventListener('close', (event) => {
+			if (!finalSeen && !error) {
+				error = new Error(`elevenLabs: socket closed before final frame (code ${event.code})`)
+			}
 			done = true
 			wake()
 		})
@@ -129,6 +141,7 @@ export class ElevenLabsTTS implements TTSProvider {
 				try {
 					ws.close()
 				} catch {}
+				if (!finalSeen && !error) error = new Error('elevenLabs: aborted')
 				done = true
 				wake()
 			},
